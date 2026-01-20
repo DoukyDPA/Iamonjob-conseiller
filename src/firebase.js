@@ -5,6 +5,14 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
+// AJOUTEZ CETTE LIGNE ICI :
+console.log("Mon API Key est :", import.meta.env.VITE_API_KEY);
+
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_API_KEY,
+  // ...
+};
+
 // 2. Configuration utilisant les variables d'environnement (Vite/Vercel)
 // Cela remplace votre ancien "__firebase_config" qui ne marchait pas
 const firebaseConfig = {
