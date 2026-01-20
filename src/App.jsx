@@ -4,23 +4,27 @@ import {
   AlertTriangle, CheckCircle, Clock, Eye, Download, 
   FileCheck, Settings, Upload, RefreshCw, AlertOctagon, Loader, X, Wrench
 } from 'lucide-react';
-import { initializeApp } from 'firebase/app';
+
+// --- MODIFICATION ICI : On importe auth et db depuis votre fichier firebase.js ---
+import { auth, db } from './firebase'; 
+
+// On garde les fonctions utilitaires de Firebase Auth dont on a besoin
 import { 
-  getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut 
+  signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut 
 } from 'firebase/auth';
+
+// On garde les fonctions utilitaires de Firestore dont on a besoin
 import { 
-  getFirestore, collection, addDoc, query, onSnapshot, 
+  collection, addDoc, query, onSnapshot, 
   doc, updateDoc, orderBy, serverTimestamp, setDoc, getDoc 
 } from 'firebase/firestore';
 
 // --- CONFIGURATION FIREBASE ---
-const firebaseConfig = JSON.parse(__firebase_config);
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'iamonjob-mvp';
+// Les lignes qui plantaient ont été supprimées.
+// On récupère juste l'ID de l'app (on sécurise aussi __app_id pour éviter un autre crash)
+const appId = (typeof __app_id !== 'undefined') ? __app_id : 'iamonjob-mvp';
 
-// --- FONCTIONS UTILITAIRES (DÉFINIES EN PREMIER) ---
+// --- FONCTIONS UTILITAIRES ... (la suite reste identique)
 
 const generateRef = () => `IAM-${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2,'0')}${String(new Date().getDate()).padStart(2,'0')}-${Math.floor(Math.random()*0xFFFFFF).toString(16).toUpperCase().padStart(6,'0')}`;
 
