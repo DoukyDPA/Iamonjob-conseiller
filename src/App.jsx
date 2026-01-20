@@ -1,3 +1,5 @@
+import html2pdf from 'html2pdf.js'; // <--- AJOUTER CETTE LIGNE
+import React, { useState, useEffect, useMemo } from 'react';
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   User, Lock, FileText, Plus, Search, LogOut, 
