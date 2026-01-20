@@ -1,24 +1,23 @@
-import html2pdf from 'html2pdf.js'; // <--- AJOUTER CETTE LIGNE
+import html2pdf from 'html2pdf.js';
 import React, { useState, useEffect, useMemo } from 'react';
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  User, Lock, FileText, Plus, Search, LogOut, 
-  AlertTriangle, CheckCircle, Clock, Eye, Download, 
+import {
+  User, Lock, FileText, Plus, Search, LogOut,
+  AlertTriangle, CheckCircle, Clock, Eye, Download,
   FileCheck, Settings, Upload, RefreshCw, AlertOctagon, Loader, X, Wrench
 } from 'lucide-react';
 
 // --- MODIFICATION ICI : On importe auth et db depuis votre fichier firebase.js ---
-import { auth, db } from './firebase'; 
+import { auth, db } from './firebase';
 
 // On garde les fonctions utilitaires de Firebase Auth dont on a besoin
-import { 
-  signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut 
+import {
+  signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut
 } from 'firebase/auth';
 
 // On garde les fonctions utilitaires de Firestore dont on a besoin
-import { 
-  collection, addDoc, query, onSnapshot, 
-  doc, updateDoc, orderBy, serverTimestamp, setDoc, getDoc 
+import {
+  collection, addDoc, query, onSnapshot,
+  doc, updateDoc, orderBy, serverTimestamp, setDoc, getDoc
 } from 'firebase/firestore';
 
 // --- CONFIGURATION FIREBASE ---
@@ -28,7 +27,7 @@ const appId = (typeof __app_id !== 'undefined') ? __app_id : 'iamonjob-mvp';
 
 // --- FONCTIONS UTILITAIRES ... (la suite reste identique)
 
-const generateRef = () => `IAM-${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2,'0')}${String(new Date().getDate()).padStart(2,'0')}-${Math.floor(Math.random()*0xFFFFFF).toString(16).toUpperCase().padStart(6,'0')}`;
+const generateRef = () => `IAM-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}-${Math.floor(Math.random() * 0xFFFFFF).toString(16).toUpperCase().padStart(6, '0')}`;
 
 const generateDefaultYaml = (firstName, targetRole) => `---
 doc_title: "Dossier de compétences"
@@ -66,7 +65,7 @@ const renderTable = (tableLines) => {
 
   const thead = `<thead><tr>${headers.map(h => `<th>${parseInline(h)}</th>`).join('')}</tr></thead>`;
   const tbody = `<tbody>${bodyRows.map(row => {
-    while(row.length < headers.length) row.push('');
+    while (row.length < headers.length) row.push('');
     return `<tr>${row.map(cell => `<td>${parseInline(cell)}</td>`).join('')}</tr>`;
   }).join('')}</tbody>`;
 
@@ -75,10 +74,10 @@ const renderTable = (tableLines) => {
 
 const markdownToHtml = (md) => {
   if (!md) return "";
-  
+
   // Nettoyage des listes cassées (ex: "* \n Texte")
   let cleanedMd = md.replace(/^(\s*[\*\-])\s*\n\s*/gm, '$1 ');
-  
+
   const lines = stripYamlFrontMatter(cleanedMd).split(/\r?\n/);
   const out = [];
   let i = 0;
@@ -106,10 +105,10 @@ const markdownToHtml = (md) => {
     if (trim.startsWith('### ')) { out.push(`<h3>${parseInline(trim.slice(4))}</h3>`); i++; continue; }
 
     // Tableaux
-    if (trim.includes('|') && i + 1 < lines.length && lines[i+1].trim().match(/^[:\-\| ]+$/)) {
+    if (trim.includes('|') && i + 1 < lines.length && lines[i + 1].trim().match(/^[:\-\| ]+$/)) {
       const tableLines = [];
       tableLines.push(lines[i]);
-      tableLines.push(lines[i+1]);
+      tableLines.push(lines[i + 1]);
       i += 2;
       while (i < lines.length && lines[i].trim().includes('|')) {
         tableLines.push(lines[i]);
@@ -122,7 +121,7 @@ const markdownToHtml = (md) => {
     // Listes
     if (trim.match(/^[\*\-]\s+/)) {
       out.push('<ul>');
-      while(i < lines.length && lines[i].trim().match(/^[\*\-]\s+/)) {
+      while (i < lines.length && lines[i].trim().match(/^[\*\-]\s+/)) {
         let content = lines[i].trim().replace(/^[\*\-]\s+/, '');
         out.push(`<li>${parseInline(content)}</li>`);
         i++;
@@ -453,7 +452,7 @@ const FolderDetail = ({ folder, onBack, onSave, onGenerate }) => {
       setData((d) => ({
         ...d,
         markdown: generateDefaultYaml(d.firstName, d.targetRole) +
-`# Analyse du CV
+          `# Analyse du CV
 
 [À COMPLETER]
 
@@ -487,7 +486,7 @@ const FolderDetail = ({ folder, onBack, onSave, onGenerate }) => {
 
   const previewHtml = useMemo(() => {
     const body = markdownToHtml(data.markdown);
-    
+
     // Extraction simple du YAML pour le titre
     let candidat = data.firstName || "Anonymisé";
 
@@ -499,6 +498,24 @@ const FolderDetail = ({ folder, onBack, onSave, onGenerate }) => {
       .replace(/\$poste_vise\$/g, data.targetRole || "")
       .replace("$body$", body);
   }, [data.markdown, data.firstName, data.targetRole]);
+
+  const handleDownloadPdf = () => {
+    // On crée un élément temporaire pour contenir le HTML
+    const element = document.createElement('div');
+    element.innerHTML = previewHtml;
+
+    // Options pour un format A4 propre
+    const opt = {
+      margin: 0,
+      filename: `Dossier_${data.ref}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // Génération et sauvegarde
+    html2pdf().set(opt).from(element).save();
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-4 h-[calc(100vh-100px)] flex flex-col">
@@ -512,8 +529,8 @@ const FolderDetail = ({ folder, onBack, onSave, onGenerate }) => {
           <button onClick={() => setPreview(!preview)} className="px-3 py-1 bg-slate-100 rounded hover:bg-slate-200">
             {preview ? "Éditer" : "Aperçu"}
           </button>
-          {data.status === 'pdf_ready' ? 
-            <Button variant="success" icon={Download}>Télécharger</Button> : 
+          {data.status === 'pdf_ready' ?
+            <Button variant="success" icon={Download} onClick={handleDownloadPdf}>Télécharger</Button> :
             <Button onClick={() => {
               const errs = validateMarkdown(data.markdown);
               setErrors(errs);
@@ -533,8 +550,8 @@ const FolderDetail = ({ folder, onBack, onSave, onGenerate }) => {
       <div className="flex-1 bg-white rounded shadow border border-slate-200 overflow-hidden flex flex-col">
         {preview ? (
           <div className="flex-1 bg-slate-600 p-8 overflow-auto flex justify-center">
-            <iframe title="Preview" srcDoc={previewHtml} className="bg-white shadow-2xl" 
-              style={{ width: "210mm", minHeight: "297mm", height: "calc(100% - 20px)", border: "none" }} 
+            <iframe title="Preview" srcDoc={previewHtml} className="bg-white shadow-2xl"
+              style={{ width: "210mm", minHeight: "297mm", height: "calc(100% - 20px)", border: "none" }}
             />
           </div>
         ) : (
@@ -557,7 +574,7 @@ const FolderDetail = ({ folder, onBack, onSave, onGenerate }) => {
 // --- APP ---
 
 export default function App() {
-  const [user, setUser] = useState(null); 
+  const [user, setUser] = useState(null);
   const [view, setView] = useState("list");
   const [folders, setFolders] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
@@ -627,8 +644,8 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col relative">
       <header className="bg-white border-b h-16 flex items-center justify-between px-6 shadow-sm sticky top-0 z-10">
-         <div className="font-bold text-lg text-teal-900 cursor-pointer" onClick={() => setView("list")}>IAMonJob</div>
-         <button onClick={() => setUser(null)}><LogOut size={18}/></button>
+        <div className="font-bold text-lg text-teal-900 cursor-pointer" onClick={() => setView("list")}>IAMonJob</div>
+        <button onClick={() => setUser(null)}><LogOut size={18} /></button>
       </header>
       <main className="flex-1 p-6 overflow-hidden">
         {view === "list" && <FolderList folders={folders} onCreate={() => setShowModal(true)} onSelect={(f) => { setSelectedFolder(f); setView("detail"); }} />}
@@ -640,8 +657,8 @@ export default function App() {
             <h3 className="font-bold mb-4">Nouveau dossier</h3>
             <input autoFocus className="w-full border p-2 rounded mb-4" placeholder="Poste visé" value={newRole} onChange={(e) => setNewRole(e.target.value)} />
             <div className="flex justify-end gap-2">
-                <Button variant="secondary" onClick={() => setShowModal(false)}>Annuler</Button>
-                <Button disabled={!newRole} onClick={handleCreate}>Créer</Button>
+              <Button variant="secondary" onClick={() => setShowModal(false)}>Annuler</Button>
+              <Button disabled={!newRole} onClick={handleCreate}>Créer</Button>
             </div>
           </div>
         </div>
