@@ -1,4 +1,4 @@
-import html2pdf from 'html2pdf.js';
+import html2pdf from 'html2pdf.js/dist/html2pdf.js';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   User, Lock, FileText, Plus, Search, LogOut,
