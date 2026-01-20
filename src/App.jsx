@@ -499,22 +499,34 @@ const FolderDetail = ({ folder, onBack, onSave, onGenerate }) => {
       .replace("$body$", body);
   }, [data.markdown, data.firstName, data.targetRole]);
 
-  const handleDownloadPdf = () => {
-    // On crée un élément temporaire pour contenir le HTML
-    const element = document.createElement('div');
-    element.innerHTML = previewHtml;
+  const handleDownloadPdf = async () => {
+    try {
+      console.log('Starting PDF generation...');
+      // On crée un élément temporaire pour contenir le HTML
+      const element = document.createElement('div');
+      element.innerHTML = previewHtml;
 
-    // Options pour un format A4 propre
-    const opt = {
-      margin: 0,
-      filename: `Dossier_${data.ref}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
+      // Options pour un format A4 propre
+      const opt = {
+        margin: 0,
+        filename: `Dossier_${data.ref}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
 
-    // Génération et sauvegarde
-    html2pdf().set(opt).from(element).save();
+      // Vérification que html2pdf est bien chargé
+      if (typeof html2pdf === 'undefined') {
+        throw new Error("La librairie html2pdf n'est pas chargée correctement.");
+      }
+
+      // Génération et sauvegarde
+      await html2pdf().set(opt).from(element).save();
+      console.log('PDF generated successfully');
+    } catch (e) {
+      console.error("PDF Download Error:", e);
+      alert("Erreur lors du téléchargement du PDF : " + e.message);
+    }
   };
 
   return (
