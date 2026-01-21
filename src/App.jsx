@@ -381,6 +381,27 @@ tbody tr:nth-child(even) {
 }
 
 .page-break-visual { height: 20px; background: #525659; }
+
+h1, h2, h3 {
+  page-break-after: avoid; /* Ne jamais couper après un titre */
+  break-after: avoid;
+}
+
+p, li, td {
+  page-break-inside: avoid; /* Essayer de ne pas couper au milieu d'un paragraphe */
+  break-inside: avoid;
+}
+
+table, .box, .intro-box {
+  page-break-inside: auto; /* Laisser couper les gros tableaux si nécessaire */
+  margin-bottom: 20px; /* Force l'espace */
+}
+
+/* Correction pour les marges qui disparaissent */
+h1, h2, h3 {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
 `;
 
 // --- COMPOSANTS UI ---
@@ -501,28 +522,27 @@ const FolderDetail = ({ folder, onBack, onSave, onGenerate }) => {
 
   const handleDownloadPdf = async () => {
     try {
-      console.log('Starting PDF generation...');
-      // On crée un élément temporaire pour contenir le HTML
+      // On crée un élément temporaire
       const element = document.createElement('div');
       element.innerHTML = previewHtml;
+      // On force une largeur fixe pour éviter les décalages de responsive
+      element.style.width = '210mm';
 
-      // Options pour un format A4 propre
       const opt = {
-        margin: 0,
+        margin: [10, 10, 10, 10], // Marges [Haut, Droite, Bas, Gauche] en mm
         filename: `Dossier_${data.ref}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        html2canvas: {
+          scale: 2, // Améliore la netteté
+          useCORS: true,
+          letterRendering: true
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        // C'EST ICI QUE LA MAGIE OPÈRE :
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
-      // Vérification que html2pdf est bien chargé
-      if (typeof html2pdf === 'undefined') {
-        throw new Error("La librairie html2pdf n'est pas chargée correctement.");
-      }
-
-      // Génération et sauvegarde
       await html2pdf().set(opt).from(element).save();
-      console.log('PDF generated successfully');
     } catch (e) {
       console.error("PDF Download Error:", e);
       alert("Erreur lors du téléchargement du PDF : " + e.message);
