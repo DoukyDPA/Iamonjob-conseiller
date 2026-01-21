@@ -1,4 +1,4 @@
-import html2pdf from 'html2pdf.js/dist/html2pdf.js';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   User, Lock, FileText, Plus, Search, LogOut,
@@ -224,184 +224,95 @@ const TEMPLATE_HTML = `
 `;
 
 const TEMPLATE_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Open+Sans:wght@400;600&display=swap');
+
 :root {
   --primary: #006d6f;
   --text-dark: #222;
   --bg-zebra: #e6f2f1;
 }
 
+/* --- RÈGLES D'IMPRESSION (Crucial pour le PDF) --- */
+@page {
+  size: A4;
+  margin: 15mm 15mm 15mm 15mm; /* Marges du document */
+}
+
+@media print {
+  body { 
+    -webkit-print-color-adjust: exact; /* Force l'impression des couleurs de fond */
+    print-color-adjust: exact;
+  }
+  .page-break-visual { display: none; } /* On cache les sauts de ligne visuels de l'écran */
+  .page {
+    box-shadow: none;
+    margin: 0;
+    width: 100%;
+    page-break-after: always; /* Force une nouvelle page après la couverture */
+  }
+  
+  /* Évite de couper les éléments en deux */
+  h1, h2, h3, tr, li { page-break-inside: avoid; }
+  p { orphans: 3; widows: 3; } /* Évite une ligne seule en bas de page */
+}
+
+/* --- STYLES GÉNÉRAUX --- */
 body {
-  margin: 0;
-  padding: 0;
-  background-color: #525659;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Open Sans', Arial, sans-serif;
   color: var(--text-dark);
   font-size: 11pt;
   line-height: 1.5;
+  background: white; /* Fond blanc obligatoire pour print */
 }
 
-.page, .content-wrapper {
-  width: 210mm;
-  min-height: 297mm;
-  background: white;
-  margin: 0 auto 1cm auto;
-  padding: 2cm 2.5cm;
-  box-sizing: border-box;
+/* Couverture */
+.cover-page { 
+  display: flex; flex-direction: column; 
+  height: 270mm; /* Hauteur ajustée pour A4 */
   position: relative;
-  overflow: hidden;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
-.cover-page { display: flex; flex-direction: column; }
-.header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3cm; }
-
-.badge-perso {
-  font-weight: bold; font-size: 9pt; text-transform: uppercase; color: #666; line-height: 1.2; margin-bottom: 5px;
-}
-.logo-iam {
-  font-family: "Arial Black", Arial, sans-serif; font-weight: 900; font-size: 26pt; color: #333; letter-spacing: -1px;
-}
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2cm; }
+.badge-perso { font-weight: bold; font-size: 9pt; text-transform: uppercase; color: #666; margin-bottom: 5px; }
+.logo-iam { font-family: "Montserrat", sans-serif; font-weight: 800; font-size: 26pt; color: #333; letter-spacing: -1px; }
 
 .header-right { border-left: 5px solid var(--primary); padding-left: 12px; }
-.logo-cbe { font-size: 10pt; line-height: 1.3; color: #333; text-align: left; }
+.logo-cbe { font-size: 10pt; line-height: 1.3; color: #333; }
 .sud94 { color: var(--primary); font-weight: bold; font-size: 11pt; }
 
-.cover-body { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
-.main-title {
-  font-weight: bold; font-size: 30pt; color: var(--primary); text-transform: uppercase; line-height: 1.2; margin-bottom: 1.5cm;
-}
-.meta-info { font-size: 15pt; color: #333; margin-bottom: 3cm; }
+.cover-body { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; justify-content: center; }
+.main-title { font-family: "Montserrat"; font-weight: 800; font-size: 32pt; color: var(--primary); text-transform: uppercase; line-height: 1.1; margin-bottom: 1cm; }
+.meta-info { font-size: 14pt; color: #444; margin-bottom: 2cm; }
 
 .intro-box {
-  text-align: left; margin: 0 auto; width: 90%; font-size: 13pt; color: #333;
-  padding: 15px;
-  background-color: #f9f9f9;
-  border-left: 8px solid var(--primary);
-  border-radius: 0 10px 10px 0;
+  text-align: left; width: 90%; font-size: 12pt; color: #444; padding: 20px;
+  background-color: #f4fcfc; border-left: 8px solid var(--primary); border-radius: 4px;
 }
-.intro-box p { margin-bottom: 1em; }
 
+/* Contenu */
 .page-header {
   display: flex; justify-content: space-between; align-items: flex-end;
-  border-bottom: 3px solid var(--primary); padding-bottom: 10px; margin-bottom: 2cm;
+  border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 1.5cm; margin-top: 1cm;
 }
-.ph-badge { font-size: 8pt; text-transform: uppercase; font-weight: bold; color: #666; line-height: 1.2; }
-.ph-logo { font-family: "Arial Black", sans-serif; font-weight: 900; font-size: 13pt; color: #333; }
-.ph-right { font-weight: bold; font-size: 13pt; color: var(--primary); text-transform: uppercase; }
+.ph-badge { font-size: 8pt; text-transform: uppercase; font-weight: bold; color: #666; }
+.ph-logo { font-family: "Montserrat"; font-weight: 800; font-size: 12pt; color: #333; }
+.ph-right { font-weight: bold; font-size: 12pt; color: var(--primary); text-transform: uppercase; }
 
-.page-footer {
-  position: absolute; bottom: 1.5cm; right: 2.5cm;
-  font-weight: bold; font-size: 9pt; color: var(--primary); text-transform: uppercase; text-align: right;
-}
+h1 { font-family: "Montserrat"; font-weight: 700; font-size: 20pt; color: var(--primary); text-transform: uppercase; margin-top: 1.5cm; margin-bottom: 0.5cm; border-bottom: 1px solid #eee; padding-bottom: 10px; page-break-after: avoid; }
+h2 { font-family: "Montserrat"; font-weight: 600; font-size: 13pt; background-color: var(--primary); color: white; padding: 6px 12px; display: inline-block; margin-top: 1cm; margin-bottom: 0.5cm; border-radius: 2px; text-transform: uppercase; page-break-after: avoid; }
+h3 { font-weight: bold; font-size: 11pt; color: var(--primary); margin-top: 0.8cm; margin-bottom: 0.3cm; border-left: 4px solid var(--primary); padding-left: 10px; page-break-after: avoid; }
 
-h1 {
-  font-weight: bold; font-size: 22pt; color: var(--primary); text-transform: uppercase;
-  margin-top: 1.5cm; margin-bottom: 1cm;
-  border-bottom: 1px solid #ddd; padding-bottom: 10px;
-}
+p { margin-bottom: 0.8em; text-align: justify; }
+ul { padding-left: 1.5em; margin-bottom: 1em; }
+li { margin-bottom: 0.3em; }
 
-h2 {
-  font-family: Arial, sans-serif;
-  font-weight: bold;
-  font-size: 13pt;
-  background-color: var(--primary);
-  color: white;
-  padding: 8px 12px;
-  display: inline-block;
-  margin-top: 1.5em; margin-bottom: 1em;
-  border-radius: 2px;
-  text-transform: uppercase;
-  box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
-}
+table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 10pt; }
+th { background-color: var(--primary); color: white; font-weight: bold; padding: 8px; text-align: left; text-transform: uppercase; font-size: 9pt; }
+td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
+tbody tr:nth-child(even) { background-color: var(--bg-zebra); }
 
-h3 {
-  font-weight: bold; font-size: 12pt; color: var(--primary);
-  margin-top: 1em; margin-bottom: 0.5em;
-  border-left: 5px solid var(--primary); padding-left: 10px;
-}
-
-ul { 
-  padding-left: 1.5em; 
-  margin-bottom: 1em; 
-  list-style-type: disc; 
-}
-li { 
-  margin-bottom: 0.5em; 
-  text-align: justify;
-}
-li p { margin: 0; display: inline; }
-
-p { margin-bottom: 1em; text-align: justify; }
-
-table {
-  width: 100%; 
-  border-collapse: collapse; 
-  margin: 1.5em 0;
-  font-size: 10pt; 
-  table-layout: auto;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-
-th {
-  background-color: var(--primary);
-  color: white; 
-  font-weight: bold;
-  padding: 10px 12px; 
-  text-align: left;
-  border: 1px solid var(--primary);
-  text-transform: uppercase; 
-  font-size: 9pt;
-}
-
-td {
-  border: 1px solid #ddd;
-  padding: 10px 12px; 
-  vertical-align: top;
-}
-
-tbody tr:nth-child(even) {
-  background-color: var(--bg-zebra); 
-}
-
-.check {
-  color: var(--primary); font-weight: 900; font-size: 14pt;
-}
-
-.table-gap {
-  margin: 2em 0;
-}
-
-.box {
-  background: #f9f9f9; 
-  border-left: 5px solid var(--primary);
-  padding: 1em; 
-  margin: 1em 0; 
-  font-style: italic;
-  color: #555;
-}
-
-.page-break-visual { height: 20px; background: #525659; }
-
-h1, h2, h3 {
-  page-break-after: avoid; /* Ne jamais couper après un titre */
-  break-after: avoid;
-}
-
-p, li, td {
-  page-break-inside: avoid; /* Essayer de ne pas couper au milieu d'un paragraphe */
-  break-inside: avoid;
-}
-
-table, .box, .intro-box {
-  page-break-inside: auto; /* Laisser couper les gros tableaux si nécessaire */
-  margin-bottom: 20px; /* Force l'espace */
-}
-
-/* Correction pour les marges qui disparaissent */
-h1, h2, h3 {
-  padding-top: 10px;
-  padding-bottom: 10px;
-}
+.check { color: var(--primary); font-weight: 900; font-size: 12pt; }
+.box { background: #f9f9f9; border-left: 4px solid var(--primary); padding: 10px; margin: 1em 0; font-style: italic; color: #555; }
 `;
 
 // --- COMPOSANTS UI ---
@@ -520,33 +431,22 @@ const FolderDetail = ({ folder, onBack, onSave, onGenerate }) => {
       .replace("$body$", body);
   }, [data.markdown, data.firstName, data.targetRole]);
 
-  const handleDownloadPdf = async () => {
-    try {
-      // On crée un élément temporaire
-      const element = document.createElement('div');
-      element.innerHTML = previewHtml;
-      // On force une largeur fixe pour éviter les décalages de responsive
-      element.style.width = '210mm';
+  const handleDownloadPdf = () => {
+    // 1. Ouvrir une nouvelle fenêtre temporaire
+    const printWindow = window.open('', '_blank', 'width=900,height=800');
 
-      const opt = {
-        margin: [10, 10, 10, 10], // Marges [Haut, Droite, Bas, Gauche] en mm
-        filename: `Dossier_${data.ref}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2, // Améliore la netteté
-          useCORS: true,
-          letterRendering: true
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        // C'EST ICI QUE LA MAGIE OPÈRE :
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-      };
+    // 2. Écrire le HTML complet (avec le CSS) dedans
+    printWindow.document.write(previewHtml);
 
-      await html2pdf().set(opt).from(element).save();
-    } catch (e) {
-      console.error("PDF Download Error:", e);
-      alert("Erreur lors du téléchargement du PDF : " + e.message);
-    }
+    // 3. Attendre que les images/fonts chargent et lancer l'impression
+    printWindow.document.close();
+    printWindow.focus();
+
+    // Petit délai pour assurer le chargement des styles
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close(); // Ferme la fenêtre après (optionnel)
+    }, 500);
   };
 
   return (
